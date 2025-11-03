@@ -1039,7 +1039,7 @@ const updateUserBestTime = async (userId, gameKey, newTime) => {
         step();
     }
 
-        initDynamicBackground();
+        //initDynamicBackground();
         
 
         setTheme(savedTheme);
