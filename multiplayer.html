@@ -35,7 +35,6 @@
         <label>ประเภทเกม
           <select id="gameType">
             <option value="table">เติมตารางธาตุ</option>
-            <option value="flashcard">Flashcard</option>
           </select>
         </label>
         <label>เวลารอบ (วินาที)
@@ -88,7 +87,7 @@
     </section>
   </main>
 
-  <script>
+ <script>
     document.addEventListener('DOMContentLoaded', () => {
       const $ = (q)=>document.querySelector(q);
       const playersEl = $('#players');
@@ -128,6 +127,50 @@
         const s=Math.floor(ms/1000), m=Math.floor(s/60), ss=String(s%60).padStart(2,'0'); 
         return m+':'+ss;
       };
+
+      // ตั้งค่า default เป็น 180 วินาที
+      if (!roundSecInput.value || roundSecInput.value === '') {
+        roundSecInput.value = 180;
+      }
+
+      // ฟังก์ชันตรวจสอบเวลาขั้นต่ำ
+      const validateRoundTime = () => {
+        const value = parseInt(roundSecInput.value || '180', 10);
+        
+        if (value < 30 && value > 0) {
+          roundSecInput.style.borderColor = '#ff4444';
+          roundSecInput.style.backgroundColor = '#ffe6e6';
+          roundSecInput.style.color = '#cc0000';
+          
+          // แสดงข้อความเตือน
+          let warning = document.getElementById('time-warning');
+          if (!warning) {
+            warning = document.createElement('div');
+            warning.id = 'time-warning';
+            warning.style.cssText = 'color:#ff4444;font-size:0.9em;margin-top:4px;font-weight:500;';
+            warning.textContent = '⚠️ เวลาขั้นต่ำคือ 30 วินาที';
+            roundSecInput.parentElement.appendChild(warning);
+          }
+          warning.style.display = 'block';
+        } else {
+          // รีเซ็ตสีกลับเป็นปกติ
+          roundSecInput.style.borderColor = '';
+          roundSecInput.style.backgroundColor = '';
+          roundSecInput.style.color = '';
+          
+          const warning = document.getElementById('time-warning');
+          if (warning) {
+            warning.style.display = 'none';
+          }
+        }
+      };
+      
+      // ตรวจสอบทุกครั้งที่มีการเปลี่ยนค่า
+      roundSecInput.addEventListener('input', validateRoundTime);
+      roundSecInput.addEventListener('change', validateRoundTime);
+      
+      // ตรวจสอบครั้งแรกเมื่อโหลดหน้า
+      validateRoundTime();
 
       // Auth gate
       (async () => {
@@ -330,7 +373,15 @@
       createBtn.addEventListener('click', async ()=>{
         try {
           const mode = modeSel.value;
-          const roundSec = Math.max(30, parseInt(roundSecInput.value||'180',10));
+          const inputValue = parseInt(roundSecInput.value||'180',10);
+          const roundSec = Math.max(30, inputValue);
+          
+          // แสดงเตือนถ้าค่าที่กรอกต่ำกว่า 30
+          if (inputValue < 30) {
+            alert('⚠️ เวลาขั้นต่ำคือ 30 วินาที จะใช้ 30 วินาทีในการสร้างห้อง');
+            roundSecInput.value = 30;
+          }
+          
           const gameType = gameSel.value || 'table';
           const id = await window.multiplayer.createRoom({ mode, roundSec, gameType });
           currentRoom = id;
@@ -373,7 +424,6 @@
         } catch(e) { alert('เริ่มนับถอยหลังไม่ได้: ' + (e?.message || e)); }
       });
 
-      // --- ส่วนที่แก้ไข: Logic ของปุ่มออกจากห้อง ---
       leaveBtn.addEventListener('click', async () => {
         if (!currentRoom) {
             location.reload();
@@ -384,13 +434,11 @@
         const user = auth.currentUser;
 
         if (user) {
-            // ดึงฟังก์ชันที่จำเป็นจาก window.firebaseDb
             const { db, doc, deleteDoc } = window.firebaseDb || {};
 
-            // ตรวจสอบว่าฟังก์ชัน deleteDoc พร้อมใช้งาน
             if (typeof deleteDoc !== 'function') {
                 console.error("ฟังก์ชัน deleteDoc ไม่พร้อมใช้งาน!");
-                location.reload(); // ถ้าไม่พร้อม ให้โหลดหน้าใหม่ไปเลย
+                location.reload();
                 return;
             }
 
@@ -398,7 +446,6 @@
             
             if(unsub) { try{unsub();}catch{}; unsub=null; }
 
-            // ใช้ฟังก์ชัน deleteDoc ที่ดึงมาอย่างถูกต้อง
             await deleteDoc(playerRef).catch(err => console.error("ไม่สามารถออกจากห้องได้:", err));
         }
         

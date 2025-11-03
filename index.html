@@ -4,18 +4,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Periodic Table Game with Timer</title>
+    <title>Periodic Table Game</title>
+    <link rel="icon" type="image/png" href="favicon.png">
 
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;700&family=Roboto:wght@700&display=swap" rel="stylesheet">
   <script src="index_bootstrap.js"></script>
+  <!-- Speech System -->
+    <link rel="stylesheet" href="speech.css">
    <link rel="stylesheet" href="mp_hud.css">
 
-    <script type="module" src="firebase_init.js"></script>
 
-    
+    <script type="module" src="firebase_init.js"></script>
+    <meta property="og:image" content="https://example.com/cover.jpg">
+ 
+    <script src="speech.js" defer></script>
     <script src="script_all_features.js" defer></script>
     <script src="index_integration.js" defer></script>
     <script src="mp_hud.js" defer></script>
@@ -44,6 +49,7 @@
                 <a class="profile-link" href="leaderboard.html">🏆 Leaderboard</a>
                 <a class="profile-link" href="multiplayer.html">🤝 Multiplayer</a>
                 <a class="profile-link" href="avatar.html">🧩 Avatar</a>
+                <a class="profile-link" href="exam.html">📄 Exam</a>
             </div>
 
             <div id="best-times-container">
@@ -336,6 +342,7 @@
     document.body.appendChild(s2);
   })();
 </script>
+
 
   
 </body>

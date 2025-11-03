@@ -123,6 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { "number": 102, "symbol": "No", "name": "โนเบเลียม", "mass": 259, "category": "actinide", "y": 10, "x": 16 },
         { "number": 103, "symbol": "Lr", "name": "ลอว์เรนเซียม", "mass": 266, "category": "actinide", "y": 10, "x": 17 }
     ];
+    window.periodicElements = elements;
+    
     const categories = {
         "alkali-metal": "โลหะแอลคาไล", "alkaline-earth-metal": "โลหะแอลคาไลน์เอิร์ท", "lanthanide": "แลนทาไนด์",
         "actinide": "แอกทิไนด์", "transition-metal": "โลหะแทรนซิชัน", "post-transition-metal": "โลหะหลังแทรนซิชัน",
@@ -434,6 +436,7 @@ const updateUserBestTime = async (userId, gameKey, newTime) => {
         }
 
         const currentElement = selectedElementsData[currentCardIndex];
+        window.currentDisplayedElement = currentElement; // เพิ่มบรรทัดนี้
         flashcard.classList.remove('flipped');
         nextCardBtn.disabled = false;
         flipCardBtn.disabled = false;
@@ -470,6 +473,7 @@ const updateUserBestTime = async (userId, gameKey, newTime) => {
     };
 
     const checkAnswers = () => {
+        const elapsedTime = stopTimer();
         document.querySelectorAll('.placeholder-element').forEach(p => {
             p.classList.remove('correct-placement', 'incorrect-placement');
             p.removeAttribute('data-correct-symbol');
@@ -512,7 +516,6 @@ const updateUserBestTime = async (userId, gameKey, newTime) => {
         }
 
         if (allCorrect) {
-            const elapsedTime = stopTimer();
             let resultHTML = `<h2>เก่งมาก! ถูกต้องทั้งหมด! 🎉</h2>`;
 
             // --- ส่วนที่เพิ่มเข้ามา ---

@@ -199,13 +199,66 @@ function initializeCombinedHud() {
     });
 
     // --- Listener สำหรับแสดง Modal (จากเวอร์ชันใหม่) ---
+    
+        // --- ระบบตรวจสอบเวลาอัตโนมัติ ---
+    let autoFinishTimer = null;
+    let gameStartTime = null;
+    let roundDuration = 0;
+
+    // --- Listener สำหรับแสดง Modal และตรวจสอบเวลา ---
     const roomRef = doc(db, 'rooms', ROOM);
-    onSnapshot(roomRef, (snapshot) => {
+    onSnapshot(roomRef, async (snapshot) => {
         const roomData = snapshot.data();
+        
+        // เก็บค่า roundSec
+        if (roomData?.roundSec) {
+            roundDuration = roomData.roundSec * 1000; // แปลงเป็น ms
+        }
+
+        // เริ่มจับเวลาเมื่อเกมเริ่ม
+        if (roomData?.status === 'playing' && !gameStartTime) {
+            gameStartTime = Date.now();
+            
+            // ตั้ง timer เพื่อจบเกมอัตโนมัติ
+            if (roundDuration > 0) {
+                autoFinishTimer = setTimeout(async () => {
+                    const currentUser = auth.currentUser;
+                    if (!currentUser) return;
+
+                    // อัปเดตสถานะผู้เล่นเป็นจบเกม (ถ้ายังไม่ได้จบ)
+                    const playerDocRef = doc(db, 'rooms', ROOM, 'players', currentUser.uid);
+                    const playerSnap = await getDoc(playerDocRef);
+                    
+                    if (playerSnap.exists() && !playerSnap.data().finished) {
+                        await updateDoc(playerDocRef, {
+                            finished: true,
+                            timeMs: roundDuration,
+                            updatedAt: serverTimestamp()
+                        });
+                    }
+
+                    // ตรวจสอบว่าทุกคนจบหรือยัง
+                    const playersRef = collection(db, 'rooms', ROOM, 'players');
+                    const playersSnapshot = await getDocs(playersRef);
+                    const allFinished = playersSnapshot.docs.every(doc => doc.data().finished === true);
+
+                    if (allFinished) {
+                        await updateDoc(roomRef, { status: 'finished' });
+                    }
+                }, roundDuration);
+            }
+        }
+
+        // แสดง Modal เมื่อเกมจบ
         if (roomData && roomData.status === 'finished') {
+            if (autoFinishTimer) {
+                clearTimeout(autoFinishTimer);
+                autoFinishTimer = null;
+            }
+            
             getDocs(collection(db, 'rooms', ROOM, 'players')).then(playersSnapshot => {
                 const playersArray = playersSnapshot.docs.map(playerDoc => playerDoc.data());
-                 playersArray.sort((a, b) => {
+                playersArray.sort((a, b) => {
                     if (b.progress !== a.progress) return b.progress - a.progress;
                     return (a.timeMs || Infinity) - (b.timeMs || Infinity);
                 });

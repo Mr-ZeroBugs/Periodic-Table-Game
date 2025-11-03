@@ -98,14 +98,29 @@ button {
     font-size: 0.7rem;
     box-sizing: border-box;
     overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
-.element:hover { transform: scale(1.1); z-index: 10; border-color: #000; }
+
+.element * {
+    pointer-events: none;
+}
+
+.element:hover { 
+    transform: scale(1.1); z-index: 10; border-color: #000;
+    transition: transform 0.3s ease;
+ }
 .element.selected { box-shadow: inset 0 0 0 3px var(--primary-btn-bg); font-weight: bold; }
 .element .symbol { font-family: 'Roboto', sans-serif; font-size: 1.2rem; font-weight: 700; }
 .element .atomic-number { align-self: flex-start; padding-left: 4px; font-size: 0.6rem; }
 .element .name {
     font-size: 0.65rem;
     white-space: nowrap;
+}
+.element:active {
+    transform: scale(0.98);
 }
 
 

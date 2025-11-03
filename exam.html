@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>แบบทดสอบวัดผล | Periodic Table</title>
+  
+  <link rel="stylesheet" href="theme.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="multiplayer.css">
+  
+  <script src="theme.js"></script>
+  <script type="module" src="firebase_init.js"></script>
+
+  <style>
+    body { background: var(--bg); color: var(--text); }
+    .container { max-width: 900px; margin: 20px auto; padding: 0 16px; }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+    
+    #loading-container { text-align: center; font-weight: 500; }
+    #login-prompt { text-align: center; }
+    
+    #exam-container, #result-container, #dashboard-container, #login-prompt {
+      display: none;
+    }
+
+    /* Dashboard */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .chart-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .chart-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+    .progress-bar {
+      width: 100%;
+      height: 24px;
+      background: var(--bg);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--success, #7ee787));
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #111;
+    }
+
+    /* Exam UI */
+    #exam-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    #exam-progress { font-size: 0.9rem; color: var(--muted); }
+    #exam-timer { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+    #question-text {
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    #options-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 600px) {
+      #options-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .option-btn {
+      width: 100%;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      color: var(--text);
+      padding: 16px;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .option-btn:hover {
+      background: var(--bg);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    /* Result UI */
+    #result-container h2 {
+      text-align: center;
+      color: var(--accent);
+      margin-bottom: 8px;
+      font-size: 2rem;
+    }
+    #result-summary {
+      text-align: center;
+      font-size: 1.3rem;
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+    .result-details {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-label { color: var(--muted); }
+    .result-value { font-weight: 700; }
+
+    /* History UI */
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      transition: all 0.2s;
+    }
+    .history-item:hover {
+      border-color: var(--accent);
+      transform: translateX(4px);
+    }
+    .history-item .score { font-weight: 700; font-size: 1.1rem; }
+    .history-item .time { font-size: 0.9rem; color: var(--muted); margin-top: 4px; }
+    .history-item .date { font-size: 0.85rem; color: var(--muted); text-align: right; }
+    
+    button.primary {
+      background: var(--accent); color: #111; border: none;
+      padding: 14px 24px; border-radius: 8px;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      width: 100%; max-width: 300px;
+      display: block; margin: 20px auto 0 auto;
+      transition: all 0.2s;
+    }
+    button.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 255, 255, 0.3);
+    }
+    button.secondary {
+      background: var(--surface); color: var(--text); border: 1px solid var(--border);
+      padding: 14px 24px; border-radius: 8px;
+      font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+    }
+    button.secondary:hover {
+      background: var(--bg);
+      border-color: var(--accent);
+    }
+
+    .tab-buttons {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #111;
+      border-color: var(--accent);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="index.html">← กลับหน้าหลัก</a>
+    <h1>แบบทดสอบวัดผล</h1>
+  </header>
+
+  <main class="container">
+  
+    <div id="loading-container" class="card">
+      <p>กำลังโหลดแบบทดสอบ...</p>
+    </div>
+    
+    <div id="login-prompt" class="card">
+      <h2>กรุณาเข้าสู่ระบบ</h2>
+      <p>คุณต้องเข้าสู่ระบบก่อน จึงจะสามารถทำแบบทดสอบและดูสถิติได้</p>
+      <button id="exam-login-btn" class="primary">เข้าสู่ระบบด้วย Google</button>
+    </div>
+
+    <div id="dashboard-container" class="card">
+      <div class="tab-buttons">
+        <button class="tab-btn active" data-tab="overview">ภาพรวม</button>
+        <button class="tab-btn" data-tab="history">ประวัติการทดสอบ</button>
+      </div>
+
+      <div id="overview-tab" class="tab-content active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="total-attempts">0</div>
+            <div class="stat-label">ครั้งที่ทำ</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="avg-score">0%</div>
+            <div class="stat-label">คะแนนเฉลี่ย</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="best-score">0/0</div>
+            <div class="stat-label">คะแนนสูงสุด</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="avg-time">00:00</div>
+            <div class="stat-label">เวลาเฉลี่ย</div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <div class="chart-title">📊 สถิติความถูกต้อง</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="accuracy-bar" style="width: 0%">0%</div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <div class="chart-title">📈 5 ครั้งล่าสุด</div>
+          <canvas id="score-chart"></canvas>
+        </div>
+
+        <button id="start-exam-btn" class="primary">เริ่มทำแบบทดสอบ</button>
+      </div>
+
+      <div id="history-tab" class="tab-content">
+        <h3>ประวัติการทำแบบทดสอบทั้งหมด</h3>
+        <div id="history-list">
+          <p>ยังไม่มีประวัติการทำแบบทดสอบ</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="exam-container" class="card">
+      <div id="exam-header">
+        <span id="exam-progress">คำถาม 1 / 10</span>
+        <span id="exam-timer">00:00</span>
+      </div>
+      <p id="question-text">นี่คือคำถามตัวอย่าง?</p>
+      <div id="options-grid"></div>
+    </div>
+    
+    <div id="result-container" class="card">
+      <h2>🎉 เสร็จสิ้น! 🎉</h2>
+      <p id="result-summary">คุณทำได้ 8/10 คะแนน</p>
+      
+      <div class="result-details">
+        <div class="result-row">
+          <span class="result-label">⏱️ เวลาที่ใช้:</span>
+          <span class="result-value" id="result-time">02:30</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">✅ ตอบถูก:</span>
+          <span class="result-value" id="result-correct">8</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">❌ ตอบผิด:</span>
+          <span class="result-value" id="result-wrong">2</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">📊 เปอร์เซ็นต์:</span>
+          <span class="result-value" id="result-percent">80%</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: center; max-width: 400px; margin: 0 auto;">
+        <button id="restart-exam-btn" class="secondary" style="flex: 1; max-width: none;">ทำอีกครั้ง</button>
+        <button id="back-dashboard-btn" class="primary" style="flex: 1; max-width: none;">ดู Dashboard</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script type="module">
+    import { 
+      getAuth, 
+      onAuthStateChanged, 
+      signInWithPopup, 
+      GoogleAuthProvider 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    // Firebase and App variables
+    let db, auth, firestore;
+    let appId, userId;
+    let questionsColRef, historyColRef;
+
+    // DOM Elements
+    const loadingEl = document.getElementById('loading-container');
+    const loginPromptEl = document.getElementById('login-prompt');
+    const examLoginBtn = document.getElementById('exam-login-btn');
+    const dashboardContainerEl = document.getElementById('dashboard-container');
+    const examContainerEl = document.getElementById('exam-container');
+    const resultContainerEl = document.getElementById('result-container');
+    
+    const examProgressEl = document.getElementById('exam-progress');
+    const examTimerEl = document.getElementById('exam-timer');
+    const questionTextEl = document.getElementById('question-text');
+    const optionsGridEl = document.getElementById('options-grid');
+    
+    const resultSummaryEl = document.getElementById('result-summary');
+    const resultTimeEl = document.getElementById('result-time');
+    const resultCorrectEl = document.getElementById('result-correct');
+    const resultWrongEl = document.getElementById('result-wrong');
+    const resultPercentEl = document.getElementById('result-percent');
+    
+    const startExamBtn = document.getElementById('start-exam-btn');
+    const restartExamBtn = document.getElementById('restart-exam-btn');
+    const backDashboardBtn = document.getElementById('back-dashboard-btn');
+    const historyListEl = document.getElementById('history-list');
+
+    // Stats elements
+    const totalAttemptsEl = document.getElementById('total-attempts');
+    const avgScoreEl = document.getElementById('avg-score');
+    const bestScoreEl = document.getElementById('best-score');
+    const avgTimeEl = document.getElementById('avg-time');
+    const accuracyBarEl = document.getElementById('accuracy-bar');
+
+    // Exam state
+    let allQuestions = [];
+    let currentQuestionIndex = 0;
+    let userAnswers = [];
+    let startTime = 0;
+    let timerInterval = null;
+    let scoreChart = null;
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabName = btn.getAttribute('data-tab');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+      });
+    });
+
+    // Wait for Firebase
+    if (window.whenAuthReady) {
+      window.whenAuthReady.then(() => {
+        auth = getAuth();
+        firestore = window.firebaseDb;
+        
+        if (!auth || !firestore || !firestore.db) {
+          console.error("Firebase objects not found");
+          loadingEl.innerHTML = '<p style="color: var(--error);">เกิดข้อผิดพลาด: ไม่สามารถเชื่อมต่อ Firebase</p>';
+          return;
+        }
+        
+        db = firestore.db;
+        appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        // *** FIX: ใช้ path เดียวกับ admin.html ***
+        questionsColRef = firestore.collection(db, 'artifacts', appId, 'public', 'data', 'exam_questions');
+        
+        onAuthStateChanged(auth, checkAuthStatus);
+      }).catch(err => {
+        console.error("whenAuthReady error:", err);
+        loadingEl.innerHTML = '<p style="color: var(--error);">เกิดข้อผิดพลาดในการโหลด Firebase</p>';
+      });
+    } else {
+      console.error("window.whenAuthReady not found");
+      loadingEl.innerHTML = '<p style="color: var(--error);">เกิดข้อผิดพลาด: ไม่พบ Firebase Init</p>';
+    }
+
+    examLoginBtn.addEventListener('click', () => {
+      const provider = new GoogleAuthProvider();
+      signInWithPopup(auth, provider).catch(err => {
+        console.error("Login error:", err);
+        alert("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+      });
+    });
+
+    startExamBtn.addEventListener('click', startExam);
+    restartExamBtn.addEventListener('click', startExam);
+    backDashboardBtn.addEventListener('click', () => {
+      resultContainerEl.style.display = 'none';
+      dashboardContainerEl.style.display = 'block';
+      loadDashboard();
+    });
+
+    function checkAuthStatus(user) {
+      if (user) {
+        userId = user.uid;
+        historyColRef = firestore.collection(db, 'artifacts', appId, 'users', userId, 'exam_history');
+        
+        loginPromptEl.style.display = 'none';
+        loadingEl.style.display = 'block';
+        loadInitialData();
+      } else {
+        userId = null;
+        loadingEl.style.display = 'none';
+        loginPromptEl.style.display = 'block';
+        dashboardContainerEl.style.display = 'none';
+        examContainerEl.style.display = 'none';
+        resultContainerEl.style.display = 'none';
+      }
+    }
+    
+    async function loadInitialData() {
+      try {
+        if (allQuestions.length === 0) {
+          const { getDocs } = firestore;
+          const snapshot = await getDocs(questionsColRef);
+          allQuestions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          
+          console.log("Loaded questions:", allQuestions.length);
+        }
+        
+        if (allQuestions.length === 0) {
+          loadingEl.innerHTML = '<p style="color: var(--error);">⚠️ ไม่พบคำถามในระบบ<br><small>กรุณาเพิ่มคำถามในหน้า Admin ก่อน</small></p>';
+          return;
+        }
+
+        loadingEl.style.display = 'none';
+        dashboardContainerEl.style.display = 'block';
+        await loadDashboard();
+        
+      } catch (err) {
+        console.error("Error loading data:", err);
+        loadingEl.innerHTML = `<p style="color: var(--error);">เกิดข้อผิดพลาด: ${err.message}</p>`;
+      }
+    }
+
+    async function loadDashboard() {
+      const { query, orderBy, getDocs } = firestore;
+      
+      try {
+        const q = query(historyColRef, orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(q);
+        
+        const history = snapshot.docs.map(doc => doc.data());
+        
+        if (history.length === 0) {
+          totalAttemptsEl.textContent = '0';
+          avgScoreEl.textContent = '0%';
+          bestScoreEl.textContent = '0/0';
+          avgTimeEl.textContent = '00:00';
+          accuracyBarEl.style.width = '0%';
+          accuracyBarEl.textContent = '0%';
+          historyListEl.innerHTML = '<p>ยังไม่มีประวัติการทำแบบทดสอบ</p>';
+          return;
+        }
+
+        // Calculate stats
+        const totalAttempts = history.length;
+        const totalScore = history.reduce((sum, h) => sum + h.score, 0);
+        const totalPossible = history.reduce((sum, h) => sum + h.total, 0);
+        const avgScorePercent = Math.round((totalScore / totalPossible) * 100);
+        
+        const bestResult = history.reduce((best, h) => {
+          const currentPercent = (h.score / h.total) * 100;
+          const bestPercent = (best.score / best.total) * 100;
+          return currentPercent > bestPercent ? h : best;
+        });
+
+        const totalTime = history.reduce((sum, h) => sum + h.timeSpentMs, 0);
+        const avgTime = totalTime / history.length;
+
+        // Update stats
+        totalAttemptsEl.textContent = totalAttempts;
+        avgScoreEl.textContent = `${avgScorePercent}%`;
+        bestScoreEl.textContent = `${bestResult.score}/${bestResult.total}`;
+        avgTimeEl.textContent = formatTime(avgTime);
+        accuracyBarEl.style.width = `${avgScorePercent}%`;
+        accuracyBarEl.textContent = `${avgScorePercent}%`;
+
+        // Update history list
+        historyListEl.innerHTML = '';
+        history.forEach((data, index) => {
+          const itemEl = document.createElement('div');
+          itemEl.className = 'history-item';
+          
+          const date = data.timestamp ? data.timestamp.toDate() : new Date();
+          const dateStr = date.toLocaleDateString('th-TH', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          const time = formatTime(data.timeSpentMs);
+          const percent = Math.round((data.score / data.total) * 100);
+          
+          itemEl.innerHTML = `
+            <div>
+              <div class="score">ครั้งที่ ${totalAttempts - index}: ${data.score}/${data.total} (${percent}%)</div>
+              <div class="time">⏱️ ใช้เวลา: ${time}</div>
+            </div>
+            <div class="date">${dateStr}</div>
+          `;
+          historyListEl.appendChild(itemEl);
+        });
+
+        // Update chart
+        const last5 = history.slice(0, 5);
+        updateScoreChart(last5.reverse()); // reverse เพื่อให้แสดงจากเก่า->ใหม่ในกราฟ
+        
+      } catch (err) {
+        console.error("Error loading dashboard:", err);
+      }
+    }
+
+    function updateScoreChart(history) {
+      const canvas = document.getElementById('score-chart');
+      const ctx = canvas.getContext('2d');
+
+      if (scoreChart) {
+        scoreChart.destroy();
+      }
+
+      const labels = history.map((_, i) => `ครั้งที่ ${i + 1}`);
+      const scores = history.map(h => Math.round((h.score / h.total) * 100));
+
+      scoreChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'คะแนน (%)',
+            data: scores,
+            borderColor: 'rgb(0, 255, 255)',
+            backgroundColor: 'rgba(0, 255, 255, 0.1)',
+            tension: 0.4,
+            fill: true,
+            pointRadius: 6,
+            pointHoverRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: value => value + '%',
+                color: '#8b949e'
+              },
+              grid: {
+                color: 'rgba(139, 148, 158, 0.1)'
+              }
+            },
+            x: {
+              ticks: {
+                color: '#8b949e'
+              },
+              grid: {
+                color: 'rgba(139, 148, 158, 0.1)'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function startExam() {
+      currentQuestionIndex = 0;
+      userAnswers = [];
+      allQuestions.sort(() => 0.5 - Math.random());
+      
+      startTime = Date.now();
+      startTimer();
+      
+      dashboardContainerEl.style.display = 'none';
+      resultContainerEl.style.display = 'none';
+      examContainerEl.style.display = 'block';
+      displayQuestion();
+    }
+
+    function displayQuestion() {
+      if (currentQuestionIndex >= allQuestions.length) {
+        finishExam();
+        return;
+      }
+      
+      const q = allQuestions[currentQuestionIndex];
+      examProgressEl.textContent = `คำถาม ${currentQuestionIndex + 1} / ${allQuestions.length}`;
+      questionTextEl.textContent = q.questionText;
+      
+      optionsGridEl.innerHTML = '';
+      const shuffledOptions = [...q.options].sort(() => 0.5 - Math.random());
+      
+      shuffledOptions.forEach(option => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = option;
+        btn.onclick = () => handleOptionClick(option);
+        optionsGridEl.appendChild(btn);
+      });
+    }
+    
+    function handleOptionClick(selectedOption) {
+      userAnswers.push({
+        question: allQuestions[currentQuestionIndex].questionText,
+        selected: selectedOption,
+        correct: allQuestions[currentQuestionIndex].correctAnswer
+      });
+      
+      currentQuestionIndex++;
+      displayQuestion();
+    }
+
+    async function finishExam() {
+      clearInterval(timerInterval);
+      const timeSpentMs = Date.now() - startTime;
+      
+      let score = 0;
+      userAnswers.forEach(answer => {
+        if (answer.selected === answer.correct) score++;
+      });
+      const total = allQuestions.length;
+      const percent = Math.round((score / total) * 100);
+      
+      const timeStr = formatTime(timeSpentMs);
+      resultSummaryEl.textContent = `คุณทำได้ ${score}/${total} คะแนน`;
+      resultTimeEl.textContent = timeStr;
+      resultCorrectEl.textContent = score;
+      resultWrongEl.textContent = total - score;
+      resultPercentEl.textContent = `${percent}%`;
+      
+      examContainerEl.style.display = 'none';
+      resultContainerEl.style.display = 'block';
+      
+      const resultData = {
+        score: score,
+        total: total,
+        timeSpentMs: timeSpentMs,
+        timestamp: firestore.serverTimestamp()
+      };
+      
+      try {
+        const { addDoc } = firestore;
+        await addDoc(historyColRef, resultData);
+      } catch (err) {
+        console.error("Error saving result:", err);
+      }
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        const elapsedMs = Date.now() - startTime;
+        examTimerEl.textContent = formatTime(elapsedMs);
+      }, 1000);
+    }
+    
+    function formatTime(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+  </script>
+</body>
+</html>
