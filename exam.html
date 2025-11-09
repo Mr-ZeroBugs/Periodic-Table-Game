@@ -26,6 +26,24 @@
       display: none;
     }
 
+    /* NEW: User Info Styles */
+    #user-info {
+      text-align: center;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    #user-name-display {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    #user-email-display {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin: 4px 0 0 0;
+    }
+
     /* Dashboard */
     .stats-grid {
       display: grid;
@@ -250,6 +268,12 @@
       </div>
 
       <div id="overview-tab" class="tab-content active">
+      
+        <div id="user-info">
+          <h3 id="user-name-display"></h3>
+          <p id="user-email-display"></p>
+        </div>
+
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-value" id="total-attempts">0</div>
@@ -286,6 +310,9 @@
 
       <div id="history-tab" class="tab-content">
         <h3>ประวัติการทำแบบทดสอบทั้งหมด</h3>
+        <button id="export-csv-btn" class="secondary" style="margin-bottom: 20px; width: auto;">
+          Export เป็น CSV (สำหรับ Excel/Google Sheets)
+        </button>
         <div id="history-list">
           <p>ยังไม่มีประวัติการทำแบบทดสอบ</p>
         </div>
@@ -353,6 +380,10 @@
     const examContainerEl = document.getElementById('exam-container');
     const resultContainerEl = document.getElementById('result-container');
     
+    // NEW: User info elements
+    const userNameEl = document.getElementById('user-name-display');
+    const userEmailEl = document.getElementById('user-email-display');
+
     const examProgressEl = document.getElementById('exam-progress');
     const examTimerEl = document.getElementById('exam-timer');
     const questionTextEl = document.getElementById('question-text');
@@ -368,6 +399,9 @@
     const restartExamBtn = document.getElementById('restart-exam-btn');
     const backDashboardBtn = document.getElementById('back-dashboard-btn');
     const historyListEl = document.getElementById('history-list');
+    
+    // NEW: Export button
+    const exportCsvBtn = document.getElementById('export-csv-btn');
 
     // Stats elements
     const totalAttemptsEl = document.getElementById('total-attempts');
@@ -438,12 +472,19 @@
       dashboardContainerEl.style.display = 'block';
       loadDashboard();
     });
+    
+    // NEW: Add listener for export button
+    exportCsvBtn.addEventListener('click', exportHistoryToCsv);
 
     function checkAuthStatus(user) {
       if (user) {
         userId = user.uid;
         historyColRef = firestore.collection(db, 'artifacts', appId, 'users', userId, 'exam_history');
         
+        // NEW: Set user info
+        userNameEl.textContent = user.displayName || 'ผู้ใช้งาน';
+        userEmailEl.textContent = user.email || 'ไม่พบอีเมล';
+
         loginPromptEl.style.display = 'none';
         loadingEl.style.display = 'block';
         loadInitialData();
@@ -709,6 +750,79 @@
         const elapsedMs = Date.now() - startTime;
         examTimerEl.textContent = formatTime(elapsedMs);
       }, 1000);
+    }
+
+    // NEW: Function to export history to CSV
+    async function exportHistoryToCsv() {
+      exportCsvBtn.textContent = 'กำลังเตรียมข้อมูล...';
+      exportCsvBtn.disabled = true;
+
+      const { query, orderBy, getDocs } = firestore;
+      let history = [];
+
+      try {
+        // 1. Fetch all history data
+        const q = query(historyColRef, orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(q);
+        history = snapshot.docs.map(doc => doc.data());
+
+        if (history.length === 0) {
+          alert('ไม่มีข้อมูลประวัติที่จะ Export');
+          exportCsvBtn.textContent = 'Export เป็น CSV (สำหรับ Excel/Google Sheets)';
+          exportCsvBtn.disabled = false;
+          return;
+        }
+
+        // 2. Build CSV string
+        // \uFEFF is a BOM (Byte Order Mark) to force Excel/Sheets to read UTF-8 (for Thai)
+        let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+        
+        // Add Header Row
+        csvContent += "วันที่,คะแนน,เต็ม,เปอร์เซ็นต์,เวลาที่ใช้ (นาที:วินาที)\r\n";
+
+        // Add Data Rows
+        history.forEach(data => {
+          const date = data.timestamp ? data.timestamp.toDate() : new Date();
+          const dateStr = date.toLocaleString('th-TH', {
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+          });
+          const timeStr = formatTime(data.timeSpentMs);
+          const percent = Math.round((data.score / data.total) * 100);
+
+          // Enclose date in quotes to handle potential commas in Thai locale
+          const safeDateStr = `"${dateStr.replace(/"/g, '""')}"`;
+          
+          const row = [
+            safeDateStr,
+            data.score,
+            data.total,
+            `${percent}%`,
+            timeStr
+          ].join(",");
+          
+          csvContent += row + "\r\n";
+        });
+
+        // 3. Trigger Download
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "exam_history.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 4. Reset button
+        exportCsvBtn.textContent = 'Export เป็น CSV (สำหรับ Excel/Google Sheets)';
+        exportCsvBtn.disabled = false;
+
+      } catch (err) {
+        console.error("Error exporting CSV:", err);
+        alert('เกิดข้อผิดพลาดในการ Export: ' + err.message);
+        exportCsvBtn.textContent = 'Export เป็น CSV (สำหรับ Excel/Google Sheets)';
+        exportCsvBtn.disabled = false;
+      }
     }
     
     function formatTime(ms) {
