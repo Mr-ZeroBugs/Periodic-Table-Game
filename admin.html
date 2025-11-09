@@ -357,7 +357,7 @@
       const { doc, deleteDoc } = firestore;
       
       try {
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam', 'questions', id);
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_questions', id);
         await deleteDoc(docRef);
         // onSnapshot จะอัปเดต UI ให้อัตโนมัติ
       } catch (err) { 
