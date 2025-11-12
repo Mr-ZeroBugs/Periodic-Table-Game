@@ -473,7 +473,6 @@ const updateUserBestTime = async (userId, gameKey, newTime) => {
     };
 
     const checkAnswers = () => {
-        const elapsedTime = stopTimer();
         document.querySelectorAll('.placeholder-element').forEach(p => {
             p.classList.remove('correct-placement', 'incorrect-placement');
             p.removeAttribute('data-correct-symbol');
@@ -516,6 +515,7 @@ const updateUserBestTime = async (userId, gameKey, newTime) => {
         }
 
         if (allCorrect) {
+            const elapsedTime = stopTimer();
             let resultHTML = `<h2>เก่งมาก! ถูกต้องทั้งหมด! 🎉</h2>`;
 
             // --- ส่วนที่เพิ่มเข้ามา ---
@@ -529,6 +529,7 @@ const updateUserBestTime = async (userId, gameKey, newTime) => {
                 }
             } else {
                 // ถ้าไม่ได้สุ่มลำดับ จะไม่แสดงเวลาและไม่บันทึก
+                
                 resultHTML += `<p>(โหมดไม่สุ่มลำดับ จะไม่มีการบันทึกสถิติเวลา)</p>`;
                 console.log("Time not recorded: Shuffle mode was disabled.");
             }
@@ -536,6 +537,7 @@ const updateUserBestTime = async (userId, gameKey, newTime) => {
             // --- จบส่วนที่เพิ่มเข้ามา ---
 
         } else {
+            stopTimer();
             elementBank.innerHTML = '<h3>ผลลัพธ์: สีเขียวคือถูกต้อง, สีแดงคือผิด (พร้อมคำใบ้)</h3>';
         }
         checkAnswersBtn.disabled = true;
