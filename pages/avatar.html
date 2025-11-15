@@ -6,16 +6,16 @@
   <title>Avatar | Periodic Table</title>
 
   <!-- Fonts & CSS -->
-  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="../css/theme.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="avatar.css">
+  <link rel="stylesheet" href="../css/avatar.css">
 
   <!-- Firebase + Feature Pack (DO NOT load script.js or script_index.js here) -->
-  <script src="theme.js"></script>
-  <script type="module" src="firebase_init.js"></script>
-  <script src="script_all_features.js" defer></script>
+  <script src="../js/theme.js"></script>
+  <script type="module" src="../js/firebase/firebase_init.js"></script>
+  <script src="../js/script_all_features.js" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -52,7 +52,6 @@
   </main>
 
   <script>
-    // ใช้ DOMContentLoaded เพื่อกัน element ยังไม่พร้อม
     document.addEventListener('DOMContentLoaded', () => {
       const img = document.getElementById('avatar-img');
       const styleSel = document.getElementById('style');
@@ -63,7 +62,7 @@
 
       
 
-      // --- Ensure saveAvatarSeed exists for this page ---
+      // Ensure saveAvatarSeed exists for this page
       if (typeof window.saveAvatarSeed !== 'function') {
         window.saveAvatarSeed = async (combo) => {
           const user = await (window.whenAuthReady || Promise.resolve(null));
@@ -85,7 +84,6 @@ if (!img || !styleSel || !seedInput || !randomBtn || !saveBtn) {
       }
 
       function decodeSeed(combo) {
-        // combo = "style:seed" (ถ้าเคยเซฟไว้แบบนี้)
         if (!combo) return { style: 'bottts', seed: 'Lunar' };
         const idx = combo.indexOf(':');
         if (idx === -1) return { style: 'bottts', seed: combo };
@@ -108,7 +106,7 @@ if (!img || !styleSel || !seedInput || !randomBtn || !saveBtn) {
         refreshPreview();
       }
 
-      // Init: รอ auth พร้อมแล้วค่อย enable ปุ่ม save
+      // รอ auth พร้อมแล้วค่อย enable ปุ่ม save
       (async () => {
         try {
           const user = await (window.whenAuthReady || Promise.resolve(null));
@@ -125,14 +123,14 @@ if (!img || !styleSel || !seedInput || !randomBtn || !saveBtn) {
               if (db && doc && getDoc) {
                 const snap = await getDoc(doc(db, 'users', user.uid));
                 const data = snap.exists() ? snap.data() : null;
-                const combo = data?.avatarSeed; // เราเก็บแบบ "style:seed"
+                const combo = data?.avatarSeed; 
                 if (combo) {
                   const { style, seed } = decodeSeed(combo);
                   styleSel.value = style;
                   seedInput.value = seed;
                 }
               }
-            } catch (e) { /* ignore preload error */ }
+            } catch (e) {}
           }
         } catch (e) {
           saveBtn.disabled = true;
@@ -143,7 +141,6 @@ if (!img || !styleSel || !seedInput || !randomBtn || !saveBtn) {
         }
       })();
 
-      // Events (ใส่การ์ดกัน null แล้ว)
       randomBtn.addEventListener('click', randomSeed);
       styleSel.addEventListener('change', refreshPreview);
       seedInput.addEventListener('input', refreshPreview);

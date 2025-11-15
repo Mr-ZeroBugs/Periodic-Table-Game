@@ -1,0 +1,42 @@
+/* theme.css – ต้องใส่ <link rel="stylesheet" href="theme.css"> ก่อนไฟล์ css อื่นเสมอ */
+
+/* ค่าพื้นฐาน (Light) */
+:root {
+  /* สีหลัก */
+  --bg: #f0f2f5;
+  --panel: #ffffff;
+  --surface: #ffffff;      /* พื้นผิวรอง เช่น topbar, ชิ้นส่วนย่อย */
+  --text: #212529;
+  --muted: #6c757d;
+  --border: #ccc;
+
+  /* แบรนด์/ปุ่ม */
+  --accent: #007bff;
+  --accent2: #5aa9ff;
+
+  /* อื่น ๆ */
+  --success: #28a745;
+  --error: #dc3545;
+}
+
+/* โหมดมืด */
+:root[data-theme="dark"] {
+  --bg: #0f1115;
+  --panel: #171a20;
+  --surface: #12151a;
+  --text: #e8eaed;
+  --muted: #a4a9b3;
+  --border: #2a2f39;
+
+  --accent: #FFD43B;
+  --accent2: #FFE866;
+
+  --success: #7ee787;
+  --error: #ff7b72;
+}
+
+/* hook รวมให้ทุกหน้าใช้ตัวแปร */
+html, body {
+  background: var(--bg);
+  color: var(--text);
+}

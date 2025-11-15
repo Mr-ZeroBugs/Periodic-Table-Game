@@ -7,24 +7,23 @@
     <title>Periodic Table Game</title>
     <link rel="icon" type="image/png" href="favicon.png">
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;700&family=Roboto:wght@700&display=swap" rel="stylesheet">
-  <script src="index_bootstrap.js"></script>
-  <!-- Speech System -->
-    <link rel="stylesheet" href="speech.css">
-   <link rel="stylesheet" href="mp_hud.css">
+  <script src="../js/index_bootstrap.js"></script>
+    <link rel="stylesheet" href="../css/speech.css">
+   <link rel="stylesheet" href="../css/mp_hud.css">
 
 
-    <script type="module" src="firebase_init.js"></script>
+    <script type="module" src="../js/firebase/firebase_init.js"></script>
     <meta property="og:image" content="https://example.com/cover.jpg">
  
-    <script src="speech.js" defer></script>
-    <script src="script_all_features.js" defer></script>
-    <script src="index_integration.js" defer></script>
-    <script src="mp_hud.js" defer></script>
-    <script src="progress_watcher.js" defer></script> </head>
+    <script src="../js/speech.js" defer></script>
+    <script src="../js/script_all_features.js" defer></script>
+    <script src="../js/index_integration.js" defer></script>
+    <script src="../js/mp_hud.js" defer></script>
+    <script src="../js/progress_watcher.js" defer></script> </head>
 
 <body>
 </head>
@@ -237,15 +236,11 @@
     </div>
 
     <script type="module">
-        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        // Import Auth functions
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        // NEW: Import Firestore functions
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
-        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCxsn_W3oVSM0glCeS7YpkWc-5q8LYShZQ",
             authDomain: "periodic-table-database.firebaseapp.com",
@@ -260,7 +255,6 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
-        // NEW: Initialize Firestore
         const db = getFirestore(app);
 
         // Make auth functions available globally for script.js
@@ -273,7 +267,7 @@
             updateProfile
         };
 
-        // NEW: Make Firestore functions available globally for script.js
+        //  Make Firestore functions available globally for script.js
         window.firebaseDb = {
             db,
             doc,
@@ -283,7 +277,7 @@
 
     </script>
     
-    <script src="script.js"></script>
+    <script src="../js/script.js"></script>
 
 <script>
 (function(){
@@ -305,10 +299,8 @@
         bar.textContent = `Multiplayer room: ${q.room} | mode: ${q.mode}`;
         document.body.prepend(bar);
       }
-      // Expose hooks
       window.reportProgress = (p)=>{ try{ if(window.multiplayer) window.multiplayer.updateProgress(q.room, Math.max(0,Math.min(100,Math.round(p)))); }catch(e){} };
       window.reportFinish = (ms)=>{ try{ if(window.multiplayer) window.multiplayer.finishRun(q.room, Math.max(0,Math.round(ms))); }catch(e){} };
-      // Aggressive start loop (max 5s)
       let attempts = 0;
       const t = setInterval(()=>{
         attempts++;
@@ -320,7 +312,7 @@
 })();
 </script>
 
-  <script src="mp_hud.js">
+  <script src="../js/mp_hud.js">
     
   </script>
   <script>
@@ -328,16 +320,14 @@
     const room = new URL(location.href).searchParams.get('room');
     if (!room) return;
 
-    // ตั้ง selector ให้ตรงกับ DOM ของคุณ (ดูข้อ 3)
     window.MP_PROBE_CONFIG = {
       totalSelectors: ['#fill-periodic-table .placeholder-element'],
       correctSelectors: ['#fill-periodic-table .correct-placement'],
       throttleMs: 600
     };
 
-    // โหลด HUD + Watcher แค่ตอนอยู่ในห้อง
-    const s1 = document.createElement('script'); s1.src = 'mp_hud.js';
-    const s2 = document.createElement('script'); s2.src = 'progress_watcher.js';
+    const s1 = document.createElement('script'); s1.src = '../js/mp_hud.js';
+    const s2 = document.createElement('script'); s2.src = '../js/progress_watcher.js';
     document.body.appendChild(s1);
     document.body.appendChild(s2);
   })();

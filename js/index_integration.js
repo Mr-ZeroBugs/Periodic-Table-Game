@@ -1,4 +1,3 @@
-// index_integration.js  — เขียน Firestore ตรง ไม่ต้องพึ่งไฟล์อื่น
 (function(){
   const params = new URL(location.href).searchParams;
   const ROOM = params.get('room');

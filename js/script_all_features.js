@@ -1,15 +1,4 @@
-/* script_all_features.js (rewritten multiplayer core)
- * Firestore schema (stable):
- *  rooms/{roomId}: {
- *    ownerUid, status: 'lobby'|'countdown'|'playing'|'finished',
- *    mode: 'main_groups'|'all_elements',
- *    gameType: 'table'|'flashcard',
- *    roundSec, startAt, createdAt
- *  }
- *  rooms/{roomId}/players/{uid}: {
- *    username, progress, finished, timeMs, ready, updatedAt, joinedAt
- *  }
- */
+
 (() => {
   if (window.__ALL_FEATURES_INIT__) return;
   window.__ALL_FEATURES_INIT__ = true;
@@ -153,7 +142,6 @@
   }
 
   async function leaveRoom(roomId) {
-    // optional: implement removing player doc, keep simple for now
     return true;
   }
 

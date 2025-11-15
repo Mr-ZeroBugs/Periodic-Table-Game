@@ -3,12 +3,11 @@
   // อ่านค่า room และ mode จาก URL
   const urlParams = new URL(location.href).searchParams;
   const ROOM = urlParams.get('room');
-  const MODE = urlParams.get('mode'); // <-- อ่านโหมดเกมจาก URL
+  const MODE = urlParams.get('mode'); 
 
   if (!ROOM) return;
 
   const CFG = Object.assign({
-    // เราไม่จำเป็นต้องใช้ totalSelectors แล้ว เพราะจะใช้ค่าคงตัวแทน
     correctSelectors: ['#fill-periodic-table .correct-placement'],
     throttleMs: 600
   }, window.MP_PROBE_CONFIG || {});
@@ -16,9 +15,7 @@
   function uniq(nodes){ return Array.from(new Set(nodes)); }
   function $all(list){ return uniq(list.flatMap(sel => Array.from(document.querySelectorAll(sel)))); }
 
-  /**
-   * ---- LOGIC ที่แก้ไขแล้ว ----
-   */
+
   function computePercent(){
     let total;
 
@@ -35,7 +32,6 @@
     return Math.max(0, Math.min(100, Math.round((correct / total) * 100)));
   }
 
-  // --- ส่วนที่เหลือของโค้ดเหมือนเดิม ไม่ต้องแก้ไข ---
   let last=-1, lastAt=0;
   function maybeSend(){
     const now = Date.now();

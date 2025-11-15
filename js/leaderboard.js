@@ -46,8 +46,7 @@ function avatarFromProfile(uid, profile){
   // Highest priority: explicit avatarUrl
   if (profile?.avatarUrl) return profile.avatarUrl;
 
-  // Next: avatarSeed (we store 'style:seed')
-  if (profile?.avatarSeed) {
+   if (profile?.avatarSeed) {
     let style = 'bottts';
     let seed = profile.avatarSeed;
     const i = seed.indexOf(':');

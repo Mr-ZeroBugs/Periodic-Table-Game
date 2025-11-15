@@ -1,0 +1,124 @@
+/* modal.css */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  background: #171a20;
+  color: #e8eaed;
+  border: 1px solid #2a2f39;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  transform: scale(0.95);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay.visible .modal-content {
+  transform: scale(1);
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  color: #FFD43B; /* --accent color */
+}
+
+.modal-content table {
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+}
+
+.modal-content th,
+.modal-content td {
+  border-bottom: 1px solid #2a2f39;
+  padding: 12px 8px;
+  text-align: left;
+}
+
+.modal-content th {
+  color: #a4a9b3; /* --muted color */
+  font-weight: 500;
+}
+
+.modal-content td:first-child,
+.modal-content th:first-child {
+  text-align: center;
+  font-weight: 700;
+}
+
+.modal-content button {
+  margin-top: 25px;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 8px;
+  background: #FFD43B; /* --accent color */
+  color: #111;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.modal-content button:hover {
+  filter: brightness(1.1);
+}
+
+/* ===== LIGHT THEME (explicit) ===== */
+:root[data-theme="light"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(3px);
+}
+:root[data-theme="light"] .modal-content {
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #e6eaf0;
+  box-shadow: 0 10px 30px rgba(0,0,0,.10);
+}
+:root[data-theme="light"] .modal-content h2 { color: #FFC944; }
+:root[data-theme="light"] .modal-content th,
+:root[data-theme="light"] .modal-content td { border-bottom: 1px solid #e9edf3; }
+:root[data-theme="light"] .modal-content th { color: #64748b; }
+:root[data-theme="light"] .modal-content button { background: #FFE679; color: #111; }
+:root[data-theme="light"] .modal-content button:hover { filter: brightness(1.03); }
+
+/* ===== FALLBACK: ไม่มี data-theme → ใช้ preference ของระบบแทน ===== */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .modal-overlay {
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(3px);
+  }
+  :root:not([data-theme]) .modal-content {
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid #e6eaf0;
+    box-shadow: 0 10px 30px rgba(0,0,0,.10);
+  }
+  :root:not([data-theme]) .modal-content h2 { color: #FFC944; }
+  :root:not([data-theme]) .modal-content th,
+  :root:not([data-theme]) .modal-content td { border-bottom: 1px solid #e9edf3; }
+  :root:not([data-theme]) .modal-content th { color: #64748b; }
+  :root:not([data-theme]) .modal-content button { background: #FFE679; color: #111; }
+  :root:not([data-theme]) .modal-content button:hover { filter: brightness(1.03); }
+}

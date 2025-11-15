@@ -1,17 +1,13 @@
-// mp_hud.js (ฉบับผสมผสาน)
 
-/* ==== ensure theme attribute (mp_hud bootstrap) ==== */
 (function(){
   try {
-    // ถ้าเพจนี้ยังไม่มี data-theme จาก theme.js เราจะตั้งให้ตาม localStorage
     var root = document.documentElement;
     var hasAttr = root.hasAttribute('data-theme');
     if (!hasAttr) {
-      var t = localStorage.getItem('theme'); // 'dark' | 'light' (แล้วแต่คุณเซ็ต)
+      var t = localStorage.getItem('theme'); 
       if (t === 'dark' || t === 'light') {
         root.setAttribute('data-theme', t);
       } else {
-        // ไม่มีค่าเก็บไว้ → ใช้ค่าจากระบบเป็น default
         var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
       }
@@ -21,8 +17,7 @@
 
 
 (function() {
-    // --- โครงสร้างสำหรับรอ Firebase (จากเวอร์ชันใหม่) ---
-    // รอรับสัญญาณ 'firebase-ready' ก่อนที่จะเริ่มทำงาน
+
     if (window.firebaseDb) {
         initializeCombinedHud();
     } else {
@@ -35,21 +30,17 @@ function initializeCombinedHud() {
     const ROOM = new URL(location.href).searchParams.get('room');
     if (!ROOM) return;
 
-    // --- ส่วนที่นำมาจากเวอร์ชันใหม่ ---
-    // โหลดสคริปต์ของ Modal อัตโนมัติ
+
     if (!document.querySelector('script[src="end_game_modal.js"]')) {
         const modalScript = document.createElement('script');
-        modalScript.src = 'end_game_modal.js';
+        modalScript.src = '../js/end_game_modal.js';
         modalScript.defer = true;
         document.body.appendChild(modalScript);
     }
-    // --- สิ้นสุดส่วนที่นำมา ---
-
-    // ใช้ตัวแปร Firebase จาก window object ที่พร้อมใช้งานแล้ว
+ 
     const { db, collection, doc, getDoc, getDocs, onSnapshot, updateDoc, serverTimestamp } = window.firebaseDb;
     const { auth, onAuthStateChanged } = window.firebaseAuth;
 
-    // --- ส่วนที่แก้ไข: เพิ่มปุ่ม "จบเกม" เข้าไปใน HTML ของ HUD เดิมของคุณ ---
     const hud = document.createElement('div');
     hud.id = 'mp-hud';
     hud.innerHTML = `
@@ -65,7 +56,6 @@ function initializeCombinedHud() {
         if (e.target?.id === 'mp-hud-toggle') hud.classList.toggle('collapsed');
     });
 
-    // --- ส่วนที่นำมาจากเวอร์ชันใหม่: Logic ของปุ่ม "จบเกม" ---
     document.addEventListener('click', async (e) => {
         if (e.target?.id === 'manual-finish-btn') {
             const currentUser = auth.currentUser;
@@ -77,7 +67,6 @@ function initializeCombinedHud() {
             e.target.disabled = true;
             e.target.textContent = 'ยืนยันแล้ว';
 
-            // 1. อ่านเวลาจากตัวจับเวลาบนหน้าจอ
             let capturedTimeMs = null;
             const timerEl = document.getElementById('timer') || document.getElementById('fill-game-timer');
             if (timerEl) {
@@ -87,7 +76,6 @@ function initializeCombinedHud() {
                 }
             }
             
-            // 2. อัปเดตสถานะผู้เล่น
             const playerDocRef = doc(db, 'rooms', ROOM, 'players', currentUser.uid);
             await updateDoc(playerDocRef, {
                 finished: true,
@@ -95,7 +83,6 @@ function initializeCombinedHud() {
                 updatedAt: serverTimestamp()
             }, { merge: true });
 
-            // 3. ตรวจสอบว่าผู้เล่นทุกคนจบแล้วหรือยัง
             const playersRef = collection(db, 'rooms', ROOM, 'players');
             const playersSnapshot = await getDocs(playersRef);
             if (playersSnapshot.empty) return;
@@ -109,7 +96,6 @@ function initializeCombinedHud() {
         }
     });
     
-    // --- ฟังก์ชันเดิมของคุณ (ไม่เปลี่ยนแปลง) ---
     const body = () => document.getElementById('mp-hud-body');
     const profileCache = new Map();
     async function getProfile(uid) {
@@ -144,7 +130,6 @@ function initializeCombinedHud() {
         return `${m}:${ss}`;
     }
 
-    // --- ฟังก์ชัน render เดิมของคุณ (ไม่เปลี่ยนแปลง) ---
     async function render(docs) {
         const el = body();
         if (!el) return;
@@ -178,7 +163,6 @@ function initializeCombinedHud() {
         for (const p of players) {
             const row = document.createElement('div');
             row.className = 'hud-row' + (p.id === me ? ' me' : '');
-            // ใช้ Template HTML เดิมของคุณที่แสดง Progress Bar ถูกต้อง
             row.innerHTML = `
                 <img class="avatar" src="${p.avatar}" alt="">
                 <div class="flex">
@@ -193,26 +177,21 @@ function initializeCombinedHud() {
         }
     }
     
-    // --- Listener สำหรับอัปเดต HUD (ใช้โค้ดเดิมของคุณ) ---
     onSnapshot(collection(db, 'rooms', ROOM, 'players'), (snap) => render(snap.docs), (err) => {
         console.error('[mp_hud] onSnapshot error', err);
     });
 
-    // --- Listener สำหรับแสดง Modal (จากเวอร์ชันใหม่) ---
-    
-        // --- ระบบตรวจสอบเวลาอัตโนมัติ ---
     let autoFinishTimer = null;
     let gameStartTime = null;
     let roundDuration = 0;
 
-    // --- Listener สำหรับแสดง Modal และตรวจสอบเวลา ---
     const roomRef = doc(db, 'rooms', ROOM);
     onSnapshot(roomRef, async (snapshot) => {
         const roomData = snapshot.data();
         
         // เก็บค่า roundSec
         if (roomData?.roundSec) {
-            roundDuration = roomData.roundSec * 1000; // แปลงเป็น ms
+            roundDuration = roomData.roundSec * 1000; 
         }
 
         // เริ่มจับเวลาเมื่อเกมเริ่ม

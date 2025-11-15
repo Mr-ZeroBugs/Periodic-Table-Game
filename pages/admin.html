@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Panel | Exam</title>
+  
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/multiplayer.css">
+  
+  <script src="../js/theme.js"></script>
+  <script type="module" src="../js/firebase/firebase_init.js"></script>
+
+  <style>
+
+    body { background: var(--bg); color: var(--text); }
+    .container { max-width: 800px; margin: 20px auto; padding: 0 16px; }
+    
+
+    #admin-panel, #warning, #login-container {
+      display: none; 
+    }
+    
+    #warning {
+      color: var(--error);
+      font-weight: 500;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    
+    #login-container {
+      text-align: center;
+    }
+    
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+    }
+    
+    textarea {
+      min-height: 80px;
+    }
+    
+    .question-item {
+      padding: 15px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      background: var(--surface, #12151a);
+    }
+
+    .question-item ul {
+        list-style-type: none;
+        padding-left: 20px;
+    }
+    .question-item li.correct {
+        color: var(--success, #7ee787);
+        font-weight: 700;
+    }
+    .question-item li.correct::before {
+        content: '✓ ';
+    }
+    
+    button {
+        margin-right: 8px;
+    }
+    button.danger {
+        background: var(--error, #dc3545);
+        color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="index.html">← กลับหน้าหลัก</a>
+    <h1>Admin Panel: จัดการข้อสอบ</h1>
+  </header>
+
+  <main class="container">
+  
+
+    <div id="login-container" class="card">
+        <h2>Admin Panel</h2>
+        <p>กรุณาล็อกอินด้วยบัญชี Google (บัญชี Admin) เพื่อเข้าสู่ระบบ</p>
+        <button id="admin-login-btn" class="primary">ล็อกอินด้วย Google</button>
+    </div>
+
+    <div id="warning">
+      <p>กำลังตรวจสอบสิทธิ์...</p>
+    </div>
+
+
+    <div id="admin-panel">
+      
+      <div class="card">
+        <h2>เพิ่ม / แก้ไขคำถาม</h2>
+        <form id="question-form">
+ 
+          <input type="hidden" id="edit-id" value="">
+          
+          <label for="question-text">คำถาม:</label>
+          <textarea id="question-text" required></textarea>
+          
+          <label for="option-1">ตัวเลือก 1:</label>
+          <input type="text" id="option-1" required>
+          
+          <label for="option-2">ตัวเลือก 2:</label>
+          <input type="text" id="option-2" required>
+          
+          <label for="option-3">ตัวเลือก 3: (ไม่บังคับ)</label>
+          <input type="text" id="option-3">
+          
+          <label for="option-4">ตัวเลือก 4: (ไม่บังคับ)</label>
+          <input type="text" id="option-4">
+          
+          <label for="correct-answer">คำตอบที่ถูกต้อง: (ต้องตรงกับ 1 ในตัวเลือก)</label>
+          <input type="text" id="correct-answer" required>
+          
+          <button type="submit" id="save-btn" class="primary">บันทึกคำถาม</button>
+          <button type="button" class="secondary" id="clear-btn">เคลียร์ฟอร์ม</button>
+        </form>
+      </div>
+      
+      <div class="card">
+        <h2>รายการคำถามที่มีอยู่</h2>
+        <div id="questions-list">
+          <p>กำลังโหลดคำถาม...</p>
+        </div>
+      </div>
+      
+    </div>
+  </main>
+
+  <script type="module">
+
+    import { 
+      getAuth, 
+      onAuthStateChanged, 
+      signInWithPopup, 
+      GoogleAuthProvider 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      
+
+    const ADMIN_EMAIL = "hutaoomg932@gmail.com";
+
+ 
+    let db, auth, firestore;
+    let appId;
+    let questionsColRef;
+
+
+    const loginContainer = document.getElementById('login-container');
+    const warningEl = document.getElementById('warning');
+    const adminPanelEl = document.getElementById('admin-panel');
+    const adminLoginBtn = document.getElementById('admin-login-btn');
+    const form = document.getElementById('question-form');
+    const questionsListEl = document.getElementById('questions-list');
+    
+    const editId = document.getElementById('edit-id');
+    const questionText = document.getElementById('question-text');
+    const option1 = document.getElementById('option-1');
+    const option2 = document.getElementById('option-2');
+    const option3 = document.getElementById('option-3');
+    const option4 = document.getElementById('option-4');
+    const correctAnswer = document.getElementById('correct-answer');
+    const saveBtn = document.getElementById('save-btn');
+    const clearBtn = document.getElementById('clear-btn');
+
+    
+
+    if (window.whenAuthReady) {
+        window.whenAuthReady.then(() => {
+   
+            auth = window.firebaseAuth.auth;
+            firestore = window.firebaseDb;  
+            
+            if (!auth || !firestore || !firestore.db) {
+                console.error("Firebase objects (auth, db) not found on window.");
+                warningEl.textContent = "เกิดข้อผิดพลาด: ไม่สามารถโหลด Firebase (auth, db) ได้";
+                warningEl.style.display = 'block';
+                loginContainer.style.display = 'none';
+                return;
+            }
+            
+         
+            db = firestore.db; 
+            appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            
+       
+            questionsColRef = firestore.collection(db, 'artifacts', appId, 'public', 'data', 'exam_questions');
+
+
+           
+            window.firebaseAuth.onAuthStateChanged(auth, checkAuthStatus);
+            
+        }).catch(err => {
+             console.error("whenAuthReady promise rejected:", err);
+             warningEl.textContent = "เกิดข้อผิดพลาดในการเชื่อมต่อ Auth";
+             warningEl.style.display = 'block';
+        });
+    } else {
+     
+        console.error("'window.whenAuthReady' not found. Is firebase_init.js loaded correctly?");
+        warningEl.textContent = "เกิดข้อผิดพลาด: ไม่สามารถโหลด firebase_init.js ได้";
+        warningEl.style.display = 'block';
+        loginContainer.style.display = 'none';
+    }
+
+    adminLoginBtn.addEventListener('click', () => {
+        const provider = new GoogleAuthProvider();
+        signInWithPopup(getAuth(), provider).catch(err => {
+            console.error("Google sign-in error:", err);
+            warningEl.textContent = `Login failed: ${err.message}`;
+            warningEl.style.display = 'block';
+        });
+    });
+
+    function checkAuthStatus(user) {
+        if (user) {
+            if (user.email === ADMIN_EMAIL) {
+                loginContainer.style.display = 'none';
+                warningEl.style.display = 'none';
+                adminPanelEl.style.display = 'block';
+                loadQuestions(); 
+            } else {
+                loginContainer.style.display = 'none';
+                warningEl.textContent = `⚠️ ไม่มีสิทธิ์เข้าถึง บัญชี ${user.email} ไม่ใช่ Admin`;
+                warningEl.style.display = 'block';
+                adminPanelEl.style.display = 'none';
+            }
+
+        } else {
+          loginContainer.style.display = 'block';
+          warningEl.style.display = 'none';
+          adminPanelEl.style.display = 'none';
+        }
+    }
+
+
+
+    function loadQuestions() {
+      const { onSnapshot, query } = firestore;
+      
+      onSnapshot(query(questionsColRef), (snapshot) => {
+        questionsListEl.innerHTML = ''; 
+        if (snapshot.empty) { 
+            questionsListEl.innerHTML = '<p>ยังไม่มีคำถามในระบบ</p>'; 
+            return; 
+        }
+        
+        snapshot.docs.forEach(doc => {
+          const question = doc.data();
+          const questionEl = document.createElement('div');
+          questionEl.className = 'question-item';
+          questionEl.setAttribute('data-id', doc.id);
+          
+          let optionsHTML = '<ul>';
+          question.options.forEach(opt => {
+            const isCorrect = (opt === question.correctAnswer);
+            optionsHTML += `<li class="${isCorrect ? 'correct' : ''}">${opt}</li>`;
+          });
+          optionsHTML += '</ul>';
+          
+          questionEl.innerHTML = `
+            <p><strong>${question.questionText}</strong></p>
+            ${optionsHTML}
+            <button class="secondary edit-btn">แก้ไข</button>
+            <button class="danger delete-btn">ลบ</button>
+          `;
+          questionsListEl.appendChild(questionEl);
+        });
+        
+        questionsListEl.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', handleEditClick));
+        questionsListEl.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', handleDeleteClick));
+        
+      }, (error) => {
+        console.error("Error loading questions: ", error);
+        questionsListEl.innerHTML = '<p>Error loading questions.</p>';
+        warningEl.textContent = "⚠️ เกิดข้อผิดพลาด! คุณอาจไม่มีสิทธิ์อ่านข้อมูล (โปรดตรวจสอบ Firestore Rules)";
+        warningEl.style.display = 'block';
+      });
+    }
+    
+    async function handleEditClick(e) {
+      const itemEl = e.target.closest('.question-item');
+      const id = itemEl.getAttribute('data-id');
+      const { doc, getDoc } = firestore;
+      
+      try {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam', 'questions', id);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          editId.value = docSnap.id;
+          questionText.value = data.questionText;
+          option1.value = data.options[0] || '';
+          option2.value = data.options[1] || '';
+          option3.value = data.options[2] || '';
+          option4.value = data.options[3] || '';
+          correctAnswer.value = data.correctAnswer;
+          saveBtn.textContent = 'อัปเดตคำถาม';
+          window.scrollTo(0, 0); 
+        }
+      } catch (err) { 
+        console.error("Error fetching doc:", err); 
+        alert("Error fetching question.");
+      }
+    }
+    
+    async function handleDeleteClick(e) {
+      const itemEl = e.target.closest('.question-item');
+      const id = itemEl.getAttribute('data-id');
+      
+      if (prompt("หากต้องการลบ พิมพ์ 'DELETE' แล้วกด OK") !== 'DELETE') return;
+      
+      const { doc, deleteDoc } = firestore;
+      
+      try {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_questions', id);
+        await deleteDoc(docRef);
+      } catch (err) { 
+        console.error("Error deleting: ", err); 
+        alert(`Error: ${err.message}. (คุณมีสิทธิ์ Admin หรือไม่?)`); 
+      }
+    }
+    
+    clearBtn.addEventListener('click', () => {
+      form.reset(); 
+      editId.value = ''; 
+      saveBtn.textContent = 'บันทึกคำถาม';
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); 
+      saveBtn.disabled = true;
+      
+      const options = [option1.value, option2.value, option3.value, option4.value]
+        .map(opt => opt.trim()) 
+        .filter(Boolean); 
+        
+      const questionData = {
+        questionText: questionText.value, 
+        options: options, 
+        correctAnswer: correctAnswer.value.trim(),
+        createdAt: firestore.serverTimestamp()
+      };
+
+      if (!options.includes(questionData.correctAnswer)) {
+        alert("คำตอบที่ถูกต้อง ต้องตรงกับ 1 ในตัวเลือก (ที่กรอกแล้ว)!"); 
+        saveBtn.disabled = false; 
+        return;
+      }
+      
+      const { doc, setDoc, addDoc } = firestore;
+      
+      try {
+        if (editId.value) {
+          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam', 'questions', editId.value);
+          await setDoc(docRef, questionData, { merge: true });
+        } else {
+          await addDoc(questionsColRef, questionData);
+        }
+        form.reset(); 
+        editId.value = ''; 
+        saveBtn.textContent = 'บันทึกคำถาม';
+      } catch (err) { 
+        console.error("Error saving question: ", err); 
+        alert(`Error: ${err.message}. (คุณมีสิทธิ์ Admin หรือไม่? หรือตรวจสอบ Firestore Rules)`); 
+      }
+      
+      saveBtn.disabled = false;
+    });
+    
+  </script>
+</body>
+</html>
+
+
